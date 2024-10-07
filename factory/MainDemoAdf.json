@@ -1,0 +1,9 @@
+{
+	"name": "MainDemoAdf",
+	"location": "uksouth",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "c3333b6c-edaa-4a68-917c-0d949f5447f6",
+		"tenantId": "e318ff4b-774c-4b5e-a224-db7bdec288af"
+	}
+}
