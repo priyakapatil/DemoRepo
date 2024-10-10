@@ -10,6 +10,10 @@
 		"LS_AzureBlobStoragedemo_connectionString": {
 			"type": "secureString",
 			"metadata": "Secure string for 'connectionString' of 'LS_AzureBlobStoragedemo'"
+		},
+		"RestService1_properties_typeProperties_url": {
+			"type": "string",
+			"defaultValue": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d"
 		}
 	},
 	"variables": {
@@ -48,6 +52,21 @@
 				"type": "AzureBlobStorage",
 				"typeProperties": {
 					"connectionString": "[parameters('LS_AzureBlobStoragedemo_connectionString')]"
+				}
+			},
+			"dependsOn": []
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/RestService1')]",
+			"type": "Microsoft.DataFactory/factories/linkedServices",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"annotations": [],
+				"type": "RestService",
+				"typeProperties": {
+					"url": "[parameters('RestService1_properties_typeProperties_url')]",
+					"enableServerCertificateValidation": true,
+					"authenticationType": "Anonymous"
 				}
 			},
 			"dependsOn": []
@@ -100,6 +119,226 @@
 			},
 			"dependsOn": [
 				"[concat(variables('factoryId'), '/linkedServices/LS_AzureBlobStoragedemo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_RESTAPIData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "RestService1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/RestService1')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DS_JSONData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "LS_AzureBlobStoragedemo",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "DelimitedText",
+				"typeProperties": {
+					"location": {
+						"type": "AzureBlobStorageLocation",
+						"folderPath": "output1",
+						"container": "output"
+					},
+					"columnDelimiter": ",",
+					"escapeChar": "\\",
+					"firstRowAsHeader": true,
+					"quoteChar": "\""
+				},
+				"schema": [
+					{
+						"name": "deptid",
+						"type": "String"
+					},
+					{
+						"name": "deptname",
+						"type": "String"
+					}
+				]
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/LS_AzureBlobStoragedemo')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/DF_JSONDatAFlatten')]",
+			"type": "Microsoft.DataFactory/factories/dataflows",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"type": "MappingDataFlow",
+				"typeProperties": {
+					"sources": [
+						{
+							"dataset": {
+								"referenceName": "DS_RESTAPIData",
+								"type": "DatasetReference"
+							},
+							"name": "source1"
+						}
+					],
+					"sinks": [
+						{
+							"dataset": {
+								"referenceName": "DS_JSONData",
+								"type": "DatasetReference"
+							},
+							"name": "sink1"
+						}
+					],
+					"transformations": [
+						{
+							"name": "flatten1"
+						},
+						{
+							"name": "flatten2"
+						}
+					],
+					"scriptLines": [
+						"source(output(",
+						"          body as (chart as (error as string, result as (indicators as (adjclose as (adjclose as double[])[], quote as (close as double[], high as double[], low as double[], open as double[], volume as integer[])[]), meta as (chartPreviousClose as double, currency as string, currentTradingPeriod as (post as (end as integer, gmtoffset as short, start as integer, timezone as string), pre as (end as integer, gmtoffset as short, start as integer, timezone as string), regular as (end as integer, gmtoffset as short, start as integer, timezone as string)), dataGranularity as double, exchangeName as string, exchangeTimezoneName as string, fiftyTwoWeekHigh as double, fiftyTwoWeekLow as double, firstTradeDate as integer, fullExchangeName as string, gmtoffset as short, hasPrePostMarketData as boolean, instrumentType as string, longName as string, priceHint as short, range as double, regularMarketDayHigh as double, regularMarketDayLow as double, regularMarketPrice as double, regularMarketTime as integer, regularMarketVolume as integer, shortName as string, symbol as string, timezone as string, validRanges as string[]), timestamp as integer[])[])),",
+						"          headers as [string,string]",
+						"     ),",
+						"     allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     httpMethod: 'GET',",
+						"     timeout: 30,",
+						"     requestInterval: 0,",
+						"     paginationRules: ['supportRFC5988' -> 'true'],",
+						"     responseFormat: ['type' -> 'json', 'documentForm' -> 'documentPerLine']) ~> source1",
+						"source1 foldDown(unroll(body.chart.result.indicators.adjclose.adjclose),",
+						"     mapColumn(",
+						"          adjclose = body.chart.result.indicators.adjclose.adjclose,",
+						"          quote = body.chart.result.indicators.quote,",
+						"          meta = body.chart.result.meta,",
+						"          timestamp = body.chart.result.timestamp",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: true) ~> flatten1",
+						"flatten1 foldDown(unrollMultiple(quote.close,quote.high,quote.low,quote.open,quote.volume,meta.validRanges,timestamp),",
+						"     mapColumn(",
+						"          adjclose,",
+						"          quote_close = quote.close,",
+						"          qoute_high = quote.high,",
+						"          qoute_low = quote.low,",
+						"          qoute_open = quote.open,",
+						"          qoute_volume = quote.volume,",
+						"          meta_chartPreviousClose = meta.chartPreviousClose,",
+						"          currency = meta.currency,",
+						"          currentTradingPeriod_post_endpost = meta.currentTradingPeriod.post.end,",
+						"          currentTradingPeriod_post_gmtoffset = meta.currentTradingPeriod.post.gmtoffset,",
+						"          currentTradingPeriod_post_start = meta.currentTradingPeriod.post.start,",
+						"          currentTradingPeriod_post_timezone = meta.currentTradingPeriod.post.timezone,",
+						"          currentTradingPeriod_pre_end = meta.currentTradingPeriod.pre.end,",
+						"          currentTradingPeriod_pre_gmtoffset = meta.currentTradingPeriod.pre.gmtoffset,",
+						"          currentTradingPeriod_pre_start = meta.currentTradingPeriod.pre.start,",
+						"          currentTradingPeriod_pre_timezone = meta.currentTradingPeriod.pre.timezone,",
+						"          currentTradingPeriod_regular_end = meta.currentTradingPeriod.regular.end,",
+						"          currentTradingPeriod_regular_gmtoffset = meta.currentTradingPeriod.regular.gmtoffset,",
+						"          currentTradingPeriod_regular_start = meta.currentTradingPeriod.regular.start,",
+						"          currentTradingPeriod_regular_timezone = meta.currentTradingPeriod.regular.timezone,",
+						"          dataGranularity = meta.dataGranularity,",
+						"          exchangeName = meta.exchangeName,",
+						"          exchangeTimezoneName = meta.exchangeTimezoneName,",
+						"          fiftyTwoWeekHigh = meta.fiftyTwoWeekHigh,",
+						"          fiftyTwoWeekLow = meta.fiftyTwoWeekLow,",
+						"          firstTradeDate = meta.firstTradeDate,",
+						"          fullExchangeName = meta.fullExchangeName,",
+						"          gmtoffset = meta.gmtoffset,",
+						"          hasPrePostMarketData = meta.hasPrePostMarketData,",
+						"          instrumentType = meta.instrumentType,",
+						"          longName = meta.longName,",
+						"          priceHint = meta.priceHint,",
+						"          range = meta.range,",
+						"          regularMarketDayHigh = meta.regularMarketDayHigh,",
+						"          regularMarketDayLow = meta.regularMarketDayLow,",
+						"          regularMarketPrice = meta.regularMarketPrice,",
+						"          regularMarketTime = meta.regularMarketTime,",
+						"          regularMarketVolume = meta.regularMarketVolume,",
+						"          shortName = meta.shortName,",
+						"          timezone = meta.timezone,",
+						"          validRanges = meta.validRanges,",
+						"          timestamp",
+						"     ),",
+						"     skipDuplicateMapInputs: false,",
+						"     skipDuplicateMapOutputs: false) ~> flatten2",
+						"flatten2 sink(allowSchemaDrift: true,",
+						"     validateSchema: false,",
+						"     input(",
+						"          deptid as string,",
+						"          deptname as string",
+						"     ),",
+						"     partitionFileNames:['StockData.csv'],",
+						"     skipDuplicateMapInputs: true,",
+						"     skipDuplicateMapOutputs: true,",
+						"     partitionBy('hash', 1)) ~> sink1"
+					]
+				}
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/datasets/DS_RESTAPIData')]",
+				"[concat(variables('factoryId'), '/datasets/DS_JSONData')]"
+			]
+		},
+		{
+			"name": "[concat(parameters('factoryName'), '/PL_JSONDataFlow')]",
+			"type": "Microsoft.DataFactory/factories/pipelines",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"activities": [
+					{
+						"name": "DF_JSONDatAFlatten",
+						"type": "ExecuteDataFlow",
+						"dependsOn": [],
+						"policy": {
+							"timeout": "0.12:00:00",
+							"retry": 0,
+							"retryIntervalInSeconds": 30,
+							"secureOutput": false,
+							"secureInput": false
+						},
+						"userProperties": [],
+						"typeProperties": {
+							"dataflow": {
+								"referenceName": "DF_JSONDatAFlatten",
+								"type": "DataFlowReference",
+								"parameters": {},
+								"datasetParameters": {
+									"source1": {},
+									"sink1": {}
+								}
+							},
+							"staging": {},
+							"compute": {
+								"coreCount": 8,
+								"computeType": "General"
+							},
+							"traceLevel": "Fine"
+						}
+					}
+				],
+				"policy": {
+					"elapsedTimeMetric": {}
+				},
+				"annotations": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/dataflows/DF_JSONDatAFlatten')]"
 			]
 		}
 	]

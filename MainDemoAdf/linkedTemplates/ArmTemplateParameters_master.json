@@ -8,6 +8,9 @@
 		"LS_AzureBlobStoragedemo_connectionString": {
 			"value": ""
 		},
+		"RestService1_properties_typeProperties_url": {
+			"value": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d"
+		},
 		"containerUri": {
 			"value": ""
 		},
