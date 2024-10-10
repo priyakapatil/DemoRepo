@@ -21,7 +21,7 @@
 	},
 	"resources": [
 		{
-			"name": "[concat(parameters('factoryName'), '/pipeline1')]",
+			"name": "[concat(parameters('factoryName'), '/PL_WaitActivity')]",
 			"type": "Microsoft.DataFactory/factories/pipelines",
 			"apiVersion": "2018-06-01",
 			"properties": {
@@ -122,24 +122,6 @@
 			]
 		},
 		{
-			"name": "[concat(parameters('factoryName'), '/DS_RESTAPIData')]",
-			"type": "Microsoft.DataFactory/factories/datasets",
-			"apiVersion": "2018-06-01",
-			"properties": {
-				"linkedServiceName": {
-					"referenceName": "RestService1",
-					"type": "LinkedServiceReference"
-				},
-				"annotations": [],
-				"type": "RestResource",
-				"typeProperties": {},
-				"schema": []
-			},
-			"dependsOn": [
-				"[concat(variables('factoryId'), '/linkedServices/RestService1')]"
-			]
-		},
-		{
 			"name": "[concat(parameters('factoryName'), '/DS_JSONData')]",
 			"type": "Microsoft.DataFactory/factories/datasets",
 			"apiVersion": "2018-06-01",
@@ -177,6 +159,24 @@
 			]
 		},
 		{
+			"name": "[concat(parameters('factoryName'), '/DS_RESTAPIData')]",
+			"type": "Microsoft.DataFactory/factories/datasets",
+			"apiVersion": "2018-06-01",
+			"properties": {
+				"linkedServiceName": {
+					"referenceName": "RestService1",
+					"type": "LinkedServiceReference"
+				},
+				"annotations": [],
+				"type": "RestResource",
+				"typeProperties": {},
+				"schema": []
+			},
+			"dependsOn": [
+				"[concat(variables('factoryId'), '/linkedServices/RestService1')]"
+			]
+		},
+		{
 			"name": "[concat(parameters('factoryName'), '/DF_JSONDatAFlatten')]",
 			"type": "Microsoft.DataFactory/factories/dataflows",
 			"apiVersion": "2018-06-01",
@@ -189,7 +189,7 @@
 								"referenceName": "DS_RESTAPIData",
 								"type": "DatasetReference"
 							},
-							"name": "source1"
+							"name": "JSONFile"
 						}
 					],
 					"sinks": [
@@ -198,7 +198,7 @@
 								"referenceName": "DS_JSONData",
 								"type": "DatasetReference"
 							},
-							"name": "sink1"
+							"name": "Output"
 						}
 					],
 					"transformations": [
@@ -220,8 +220,8 @@
 						"     timeout: 30,",
 						"     requestInterval: 0,",
 						"     paginationRules: ['supportRFC5988' -> 'true'],",
-						"     responseFormat: ['type' -> 'json', 'documentForm' -> 'documentPerLine']) ~> source1",
-						"source1 foldDown(unroll(body.chart.result.indicators.adjclose.adjclose),",
+						"     responseFormat: ['type' -> 'json', 'documentForm' -> 'documentPerLine']) ~> JSONFile",
+						"JSONFile foldDown(unroll(body.chart.result.indicators.adjclose.adjclose),",
 						"     mapColumn(",
 						"          adjclose = body.chart.result.indicators.adjclose.adjclose,",
 						"          quote = body.chart.result.indicators.quote,",
@@ -286,7 +286,7 @@
 						"     partitionFileNames:['StockData.csv'],",
 						"     skipDuplicateMapInputs: true,",
 						"     skipDuplicateMapOutputs: true,",
-						"     partitionBy('hash', 1)) ~> sink1"
+						"     partitionBy('hash', 1)) ~> Output"
 					]
 				}
 			},
@@ -319,8 +319,8 @@
 								"type": "DataFlowReference",
 								"parameters": {},
 								"datasetParameters": {
-									"source1": {},
-									"sink1": {}
+									"JSONFile": {},
+									"Output": {}
 								}
 							},
 							"staging": {},
