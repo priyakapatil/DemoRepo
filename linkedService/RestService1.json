@@ -4,7 +4,7 @@
 		"annotations": [],
 		"type": "RestService",
 		"typeProperties": {
-			"url": "https://query2.finance.yahoo.com/v8/finance/chart/USDGBP=X?period1=1609459200&period2=1924905600&interval=1d&events=history&includeAdjustedClose=true",
+			"url": "https://query1.finance.yahoo.com/v8/finance/chart/MSFT?interval=1d",
 			"enableServerCertificateValidation": true,
 			"authenticationType": "Anonymous"
 		}
