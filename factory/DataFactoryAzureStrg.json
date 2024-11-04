@@ -1,0 +1,9 @@
+{
+	"name": "DataFactoryAzureStrg",
+	"location": "eastus",
+	"identity": {
+		"type": "SystemAssigned",
+		"principalId": "207604d6-0840-4c15-8a77-0ca0adeeb69e",
+		"tenantId": "bd61e707-ff03-48a9-b17e-31a65524e03d"
+	}
+}
