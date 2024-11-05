@@ -23,10 +23,16 @@
 			],
 			"transformations": [
 				{
-					"name": "flatten1"
+					"name": "FlattenData1"
 				},
 				{
-					"name": "flatten2"
+					"name": "FlattenData2"
+				},
+				{
+					"name": "DerviedTimestamp"
+				},
+				{
+					"name": "RequiredFields"
 				}
 			],
 			"scriptLines": [
@@ -49,8 +55,8 @@
 				"          timestamp = body.chart.result.timestamp",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
-				"     skipDuplicateMapOutputs: true) ~> flatten1",
-				"flatten1 foldDown(unrollMultiple(quote.close,quote.high,quote.low,quote.open,quote.volume,meta.validRanges,timestamp),",
+				"     skipDuplicateMapOutputs: true) ~> FlattenData1",
+				"FlattenData1 foldDown(unrollMultiple(quote.close,quote.high,quote.low,quote.open,quote.volume,meta.validRanges,timestamp),",
 				"     mapColumn(",
 				"          adjclose,",
 				"          quote_close = quote.close,",
@@ -96,8 +102,49 @@
 				"          timestamp",
 				"     ),",
 				"     skipDuplicateMapInputs: false,",
-				"     skipDuplicateMapOutputs: false) ~> flatten2",
-				"flatten2 sink(allowSchemaDrift: true,",
+				"     skipDuplicateMapOutputs: false) ~> FlattenData2",
+				"FlattenData2 derive(new_timestamp = toTimestamp(timestamp,'yyyy-MM-dd HH:mm:ss')) ~> DerviedTimestamp",
+				"DerviedTimestamp select(mapColumn(",
+				"          adjclose,",
+				"          quote_close,",
+				"          qoute_high,",
+				"          qoute_low,",
+				"          qoute_open,",
+				"          qoute_volume,",
+				"          meta_chartPreviousClose,",
+				"          currency,",
+				"          currentTradingPeriod_post_endpost,",
+				"          currentTradingPeriod_post_gmtoffset,",
+				"          currentTradingPeriod_post_start,",
+				"          currentTradingPeriod_post_timezone,",
+				"          currentTradingPeriod_pre_end,",
+				"          currentTradingPeriod_pre_gmtoffset,",
+				"          currentTradingPeriod_pre_start,",
+				"          currentTradingPeriod_pre_timezone,",
+				"          currentTradingPeriod_regular_end,",
+				"          currentTradingPeriod_regular_gmtoffset,",
+				"          currentTradingPeriod_regular_start,",
+				"          currentTradingPeriod_regular_timezone,",
+				"          exchangeName,",
+				"          exchangeTimezoneName,",
+				"          fiftyTwoWeekHigh,",
+				"          fiftyTwoWeekLow,",
+				"          firstTradeDate,",
+				"          fullExchangeName,",
+				"          instrumentType,",
+				"          longName,",
+				"          regularMarketDayHigh,",
+				"          regularMarketDayLow,",
+				"          regularMarketPrice,",
+				"          regularMarketTime,",
+				"          regularMarketVolume,",
+				"          timezone,",
+				"          validRanges,",
+				"          timestamp = new_timestamp",
+				"     ),",
+				"     skipDuplicateMapInputs: true,",
+				"     skipDuplicateMapOutputs: true) ~> RequiredFields",
+				"RequiredFields sink(allowSchemaDrift: true,",
 				"     validateSchema: false,",
 				"     input(",
 				"          deptid as string,",
