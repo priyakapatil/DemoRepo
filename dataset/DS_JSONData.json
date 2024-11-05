@@ -2,7 +2,7 @@
 	"name": "DS_JSONData",
 	"properties": {
 		"linkedServiceName": {
-			"referenceName": "LS_AzureBlobStoragedemo",
+			"referenceName": "LS_AZBS_JSONDATA",
 			"type": "LinkedServiceReference"
 		},
 		"annotations": [],
@@ -10,8 +10,8 @@
 		"typeProperties": {
 			"location": {
 				"type": "AzureBlobStorageLocation",
-				"folderPath": "output1",
-				"container": "output"
+				"folderPath": "output",
+				"container": "outputdata"
 			},
 			"columnDelimiter": ",",
 			"escapeChar": "\\",
